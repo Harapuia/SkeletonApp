@@ -8,7 +8,7 @@ from kivy.lang import Builder
 from kivy.uix.button import Button
 import android
 import os
-
+from nfc import CreateNfcBeamUrisCallback
 
 from jnius import autoclass, cast
 from jnius import JavaClass
@@ -19,8 +19,6 @@ PythonActivity = autoclass('org.renpy.android.PythonActivity')
 activity = PythonActivity.mActivity
 Intent = autoclass('android.content.Intent')
 mEnvironment = autoclass('android.os.Environment')
-NfcAdapter = autoclass('android.nfc.NfcAdapter')
-Bundle = autoclass('android.os.Bundle')
 Uri = autoclass('android.net.Uri')
 Builder.load_file('main.kv')
 
@@ -73,40 +71,6 @@ class NfcScreen(Screen):
 		DCIMdir = mEnvironment.getExternalStoragePublicDirectory(mEnvironment.DIRECTORY_DCIM)
 		print DCIMdir.list()
 
-		self.con = cast(mContext, activity)
-		mNfcAdapter = NfcAdapter.getDefaultAdapter(self.con)
-		if mNfcAdapter is None:
-			print 'Device does not support NFC.'
-		else:
-			print mNfcAdapter
-
-class MainActivity(JavaClass):
-	__javainterfaces__ = ['android/os/Activity']
-
-	testUri = ''
-	filename = ''
-	filelocation = 'content://..../'
-
-	def __init__(self):
-		super(MainActivity, self).__init__()
-
-	def onCreate(savedInstanceState):
-		sIS = cast(Bundle, savedInstanceState)
-		#Niet zeker of onderstaande regel nodig is (als het goed is overriden wij de functie zowiezo al door dezelfde naam te hebben
-		#super(onCreate, self).onCreate(sIs)
-		self.con = cast(mContext, activity)
-		mNfcAdapter = NfcAdapter.getDefaultAdapter(self.con)
-
-		if mNfcAdapter is None:
-			print 'NFC is not supported on this device.'
-			return
-		else:
-			print 'NFC is supported on this device.'
-			mNfcAdapter.setBeamPushUrisCallback(self, self.con)
-
-	def createBeamUris(nfcEvent):
-		testUri = Uri.parse(filelocation % filename)
-		return photoUri
 
 class FileWidget(BoxLayout):
 	#def __init__(self):
@@ -129,13 +93,14 @@ sm.add_widget(HomeScreen(name='home'))
 sm.add_widget(CameraScreen(name="cam"))
 sm.add_widget(NfcScreen(name='nfc'))
 
-
-
 class Skelly(App):
 	def build(self):
 		android.map_key(android.KEYCODE_BACK,1001)
 		win = Window
 		win.bind(on_keyboard=self.key_handler)
+
+		self.provider = CreateNfcBeamUrisCallback()
+
 		return sm
 
 	def on_pause(self):
