@@ -9,6 +9,7 @@ from kivy.uix.button import Button
 import android
 import os
 from nfc import CreateNfcBeamUrisCallback
+import fnmatch
 
 from jnius import autoclass, cast
 from jnius import JavaClass
@@ -24,12 +25,15 @@ Builder.load_file('main.kv')
 
 
 class HomeScreen(Screen):
+	from threading import *
 	mMediaStore = autoclass('android.provider.MediaStore')
+	mFile = autoclass('java.io.File')
+	
+
 	def likeMore(self):
 		self.ids.button1.text = self.ids.button1.text+"!"
 	def AndroidTest(self):
 		vibrator = activity.getSystemService(mContext.VIBRATOR_SERVICE)
-		#vibrator.vibrate(10000)
 		if 'ANDROID_ROOT' in os.environ:
 			vibrator.vibrate(3000)	
 		else:
@@ -49,7 +53,26 @@ class HomeScreen(Screen):
 		wid.setName('Name %d' % self.ButtonNumber)
 		self.ButtonNumber = self.ButtonNumber+1
 		self.ids.fileList.add_widget(wid)
-		#this button is bugged out for some reason
+
+
+	def printDir(self):	
+		DCIMdir = mEnvironment.getExternalStoragePublicDirectory(mEnvironment.DIRECTORY_DCIM)
+		print DCIMdir.list()
+	
+	def getStoredMedia(self):
+		for i in range(20):
+			print 'GOING TO GET THE FILES MAYBE'
+		DCIMdir = mEnvironment.getExternalStoragePublicDirectory(mEnvironment.DIRECTORY_DCIM)
+		print DCIMdir.getPath()	
+		self.ids.fileList.clear_widgets()
+		for root, dirnames, filenames in os.walk(DCIMdir.getAbsolutePath()):
+			for filename in fnmatch.filter(filenames,'*.mp4'):
+				wid = FileWidget()
+				wid.setName(filename)
+				wid.setUri(root+filename)
+				print root+filename
+				self.ids.fileList.add_widget(wid)
+				
 
 class CameraScreen(Screen):
 	mMediaStore = autoclass('android.provider.MediaStore')
@@ -60,22 +83,14 @@ class CameraScreen(Screen):
 		intention.resolveActivity(self.con.getPackageManager())	
 		if intention.resolveActivity( self.con.getPackageManager()) != None:
 			activity.startActivityForResult(intention,1)
-	#def on_resume(self):
-	#	root.manager.current='home'
 
 class NfcScreen(Screen):
-	#mIO = autoclass('java.io')
-	mFile = autoclass('java.io.File')
-
 	def printDir(self):	
 		DCIMdir = mEnvironment.getExternalStoragePublicDirectory(mEnvironment.DIRECTORY_DCIM)
 		print DCIMdir.list()
 
 
 class FileWidget(BoxLayout):
-	#def __init__(self):
-	#	Widget.__init__(self)
-	
 	name = 'NO FILENAME SET'
 	uri = None
 	thumbnail = None  #Gotta make a default for this later
@@ -86,33 +101,43 @@ class FileWidget(BoxLayout):
 		self.uri = ur
 	def setThumb(self,thumb):
 		self.thumbnail = thumb
+	def pressed(self):
+		print self.uri
 		
 
-sm = ScreenManager()
-sm.add_widget(HomeScreen(name='home'))
-sm.add_widget(CameraScreen(name="cam"))
-sm.add_widget(NfcScreen(name='nfc'))
 
 class Skelly(App):
+	sm = ScreenManager()
+	history = []
+	HomeScr = HomeScreen(name='home')
+	NfcScr = NfcScreen(name='nfc')
+	sm.switch_to(HomeScr)
+
 	def build(self):
 		android.map_key(android.KEYCODE_BACK,1001)
 		win = Window
 		win.bind(on_keyboard=self.key_handler)
 
 		self.provider = CreateNfcBeamUrisCallback()
+		self.HomeScr.getStoredMedia()
+		return self.sm
 
-		return sm
+	def swap_to(self, Screen):
+		self.history.append(self.sm.current_screen)
+		self.sm.switch_to(Screen, direction='left')
+
 
 	def on_pause(self):
 		return True
 	def on_stop(self):
 		pass
 	def on_resume(self):
-		pass
+		self.HomeScr.getStoredMedia()
 	def key_handler(self,window,keycode1, keycode2, text, modifiers):
 		if keycode1 in [27,1001]:
-			if(sm.current!='home'):
-				sm.current = 'home'
+			if len(self.history ) != 0:
+				print self.history
+				self.sm.switch_to(self.history.pop(), direction = 'right')				
 			else:
 				App.get_running_app().stop()
 
