@@ -6,11 +6,18 @@ from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.uix.button import Button
+from kivy.core.image import Image as CoreImage
+from kivy.graphics.texture import Texture
+
+import numpy
+import array
 import android
 import os
 #from nfc import CreateNfcBeamUrisCallback
 from nfc2 import CreateNfcMessageCallback
 import fnmatch
+import io
+
 
 from jnius import autoclass, cast
 from jnius import JavaClass
@@ -52,7 +59,8 @@ class HomeScreen(Screen):
 	
 	def startCamera(self):
 
-		intention = Intent(self.mMediaStore.ACTION_VIDEO_CAPTURE)
+		#intention = Intent(self.mMediaStore.ACTION_VIDEO_CAPTURE)
+		intention = Intent(self.mMediaStore.INTENT_ACTION_VIDEO_CAMERA)
 		self.con = cast(mContext, activity)			
 		intention.resolveActivity(self.con.getPackageManager())	
 		if intention.resolveActivity(self.con.getPackageManager()) != None:
@@ -70,18 +78,15 @@ class HomeScreen(Screen):
 		print DCIMdir.list()
 	
 	def getStoredMedia(self):
-		global files
-		for i in range(20):
-			print 'GOING TO GET THE FILES MAYBE'
 		DCIMdir = mEnvironment.getExternalStoragePublicDirectory(mEnvironment.DIRECTORY_DCIM)
-		print DCIMdir.getPath()	
+		print DCIMdir.toURI().getPath()	
 		self.ids.fileList.clear_widgets()
 		for root, dirnames, filenames in os.walk(DCIMdir.getAbsolutePath()):
 			for filename in fnmatch.filter(filenames,'*.mp4'):
 				wid = FileWidget()
 				wid.setName(filename)
-				wid.setUri(root+filename)
-				print root+filename
+				wid.setUri(root+'/'+filename)
+				#wid.makeThumbnail()
 				self.ids.fileList.add_widget(wid)
 				
 
@@ -102,9 +107,20 @@ class NfcScreen(Screen):
 
 
 class FileWidget(BoxLayout):
+
+	mBitmap = autoclass("android.graphics.Bitmap")
+	mCompressFormat = autoclass("android.graphics.Bitmap$CompressFormat")
+	mThumbnailUtils = autoclass ("android.media.ThumbnailUtils")
+	mByteArrayOutputStream = autoclass ("java.io.ByteArrayOutputStream")
+	mArrays = autoclass("java.util.Arrays")
+	mColor = autoclass("android.graphics.Color")
+	#mThumbnails = autoclass("android.provider.MediaStore.Video.Thumbnails")
 	name = 'NO FILENAME SET'
 	uri = None
 	thumbnail = None  #Gotta make a default for this later
+	MICRO_KIND = 3
+	FULL_KIND = 2
+	MINI_KIND = 1
 	def setName(self, nom):
 		self.name = nom
 		self.ids.filebutton.text = nom
@@ -114,7 +130,28 @@ class FileWidget(BoxLayout):
 		self.thumbnail = thumb
 	def pressed(self):
 		print self.uri
+		self.makeThumbnail()
+	def switchFormats(self, pixels):
+		print self.mColor.red(pixels[0])
+		print self.mColor.green(pixels[0])
+		print self.mColor.blue(pixels[0])
+		print self.mColor.alpha(pixels[0])
+		bit = numpy.asarray([b for pixel in [((p & 0xFF0000) >> 16, (p & 0xFF00) >> 8, p & 0xFF, (p & 0xFF000000) >> 24) for p in pixels] for b in pixel],dtype=numpy.uint8)
+		#bit = bit[::-1]		
+		print bit[0], bit[1], bit[2], bit[3]		
+		return bit
+	def makeThumbnail(self):
+		self.thumbnail = self.mThumbnailUtils.createVideoThumbnail(self.uri,self.MINI_KIND)
+		tex = Texture.create(size=(self.thumbnail.getWidth(),self.thumbnail.getHeight()) , colorfmt= 'rgba', bufferfmt='ubyte')
+		pixels = [0] *self.thumbnail.getWidth() * self.thumbnail.getHeight()
 		
+		self.thumbnail.getPixels(pixels, 0,self.thumbnail.getWidth(),0,0,self.thumbnail.getWidth(), self.thumbnail.getHeight())
+		pixels = self.switchFormats(pixels)		
+		tex.blit_buffer(pixels, colorfmt = 'rgba', bufferfmt = 'ubyte')
+		tex.flip_vertical()
+		self.ids.img.texture = tex
+		self.ids.img.canvas.ask_update()
+				
 
 
 class Skelly(App):
