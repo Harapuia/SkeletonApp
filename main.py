@@ -14,7 +14,7 @@ import array
 import android
 import os
 #from nfc import CreateNfcBeamUrisCallback
-from nfc2 import CreateNfcMessageCallback
+#from nfc2 import CreateNfcMessageCallback
 import fnmatch
 import io
 
@@ -29,7 +29,6 @@ activity = PythonActivity.mActivity
 Intent = autoclass('android.content.Intent')
 mEnvironment = autoclass('android.os.Environment')
 Uri = autoclass('android.net.Uri')
-Nfc = autoclass('org.test.Nfc')
 Builder.load_file('main.kv')
 
 NfcAdapter = autoclass('android.nfc.NfcAdapter')
@@ -190,10 +189,6 @@ class Skelly(App):
 			print 'Invalid Intent detected.'
 			return
 
-	def nfc_enable(self):
-		print 'Enabled NFC.'
-		activity.bind(on_new_intent = self.on_new_intent)
-
 	def build(self):
 		android.map_key(android.KEYCODE_BACK,1001)
 		win = Window
@@ -207,7 +202,6 @@ class Skelly(App):
 	def swap_to(self, Screen):
 		self.history.append(self.sm.current_screen)
 		self.sm.switch_to(Screen, direction='left')
-
 
 	def on_pause(self):
 		return True
