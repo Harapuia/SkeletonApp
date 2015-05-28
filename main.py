@@ -10,6 +10,10 @@ from kivy.core.image import Image as CoreImage
 from kivy.graphics.texture import Texture
 from kivy.clock import Clock
 
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.properties import ObjectProperty, ListProperty, BooleanProperty, \
+    NumericProperty
+
 import numpy
 import android
 import os
@@ -18,6 +22,8 @@ import io
 import time
 import threading
 import functools
+
+from cam import PreviewCallback, SurfaceHolderCallback, AndroidWidgetHolder, AndroidCamera
 
 from jnius import autoclass, cast, detach
 from jnius import JavaClass
@@ -35,7 +41,11 @@ NfcAdapter = autoclass('android.nfc.NfcAdapter')
 File = autoclass('java.io.File')
 CreateNfcBeamUrisCallback = autoclass('org.test.CreateNfcBeamUrisCallback')
 MediaStore = autoclass('android.provider.MediaStore')
-ThumbnailUtils = autoclass ("android.media.ThumbnailUtils")
+ThumbnailUtils = autoclass('android.media.ThumbnailUtils')
+
+MediaRecorder = autoclass('android.media.MediaRecorder')
+Camera = autoclass('android.hardware.Camera')
+CamCorderProfile = autoclass('android.media.CamcorderProfile')
 
 Builder.load_file('main.kv')
 
@@ -160,10 +170,52 @@ class FileWidget(BoxLayout):
 		print "BENCHMARK: ", time.time() - self.benchmark
 		self.benchmark = time.time()
 
+class CameraWidget(AnchorLayout):
+    camera_size = ListProperty([320, 240])
+
+    def __init__(self, **kwargs):
+        super(CameraWidget, self).__init__(**kwargs)
+        self._camera = AndroidCamera(
+                size=self.camera_size,
+                size_hint=(None, None))
+        self.add_widget(self._camera)
+
+    def start(self):
+        self._camera.start()
+
+    def stop(self):
+        self._camera.stop()
+
+class CamScreen(Screen):
+	pass
+
+#class createCam():
+#	cam = Camera.open()
+#	Camera.setPreviewDisplay()
+#	Camera.startPreview()
+#
+#	def prepareCamera(self):
+#		self.camera = getCameraInstance()
+#		self.mediaRecorder = MediaRecorder()
+#
+#		self.camera.unlock()
+#		self.mediaRecorder.setCamera(self.camera)
+#
+#		self.mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
+#		self.mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA)
+#
+#		self.mediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH))
+#
+#		self.mediaRecorder.setOutputFile(getOutputMediaFile(MEDIA_TYPE_VIDEO).toString())
+#
+#		self.mediaRecorder.setPreviewDisplay(mPreview.getHolder().getSurface())
+
+
 class Skelly(App):
 	sm = ScreenManager()
 	history = []
 	HomeScr = HomeScreen(name='home')
+	CamScr = CamScreen(name='cam')
 	sm.switch_to(HomeScr)
 
 	#Method that request the device's NFC adapter and adds a Callback function to it to activate on an Android Beam Intent.
