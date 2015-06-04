@@ -80,8 +80,9 @@ class HomeScreen(Screen):
 			vibrator.vibrate(3000)
 		print self.discovered_media
 		print activity.getFilesDir().getAbsolutePath()
-		for root, dirnames, filenames in os.walk('./'):
-			print root,'/',filenames
+		#for root, dirnames, filenames in os.walk('./'):
+		#	print root,'/',filenames
+		print Window.size
 
 	#Function for starting the camera application
 	def startCamera(self):
@@ -298,8 +299,8 @@ class FileWidget(BoxLayout):
 
 	def remove(self, *largs):
 		self.parent.remove_widget(self)
-		#os.remove(self.uri)
-		#os.remove(self.ids.img.source)
+		os.remove(self.uri)
+		os.remove(self.ids.img.source)
 
 class SearchScreen(Screen):
 	def on_txt_input(self):
@@ -317,6 +318,7 @@ class SearchScreen(Screen):
 class CameraWidget(AnchorLayout):
 	camera_size = ListProperty([800, 700])
 #	camera_size = ListProperty([480, 360])
+	passes = 0
 
 	def __init__(self, **kwargs):
 		super(CameraWidget, self).__init__(**kwargs)
@@ -325,10 +327,14 @@ class CameraWidget(AnchorLayout):
 #	        self.add_widget(self._camera)
 		self.bind(size=self.update)
 	def update(self, *args):
-		print 'Camera Size Changed to', self.size
-		self._camera = CamTestCamera(size=self.size, size_hint=(None, None))
-	        self.add_widget(self._camera)
-		self.unbind(size=self.update)
+		print self.passes
+		if self.passes == 1:
+			print 'Camera Size Changed to', self.size
+			self._camera = CamTestCamera(size=self.size, size_hint=(1, 1))
+		        self.add_widget(self._camera)
+			self.unbind(size=self.update)
+		else:
+			self.passes+=1
 
 	def start(self):
 		print 'Start camera'
