@@ -59,7 +59,8 @@ Builder.load_file('main.kv')
 
 thumbnail_sem = threading.BoundedSemaphore()
 nfc_video_set = []
-app_ending = False;
+app_ending = False
+nfcCallback = None
 
 
 class HomeScreen(Screen):
@@ -109,6 +110,8 @@ class HomeScreen(Screen):
 	#Automatically generates Filewidgets and adds them to the Scrollview
 	@run_on_ui_thread
 	def getStoredMedia(self):
+		global nfcCallback
+		nfcCallback.clearUris()
 		files = []
 		DCIMdir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
 		print DCIMdir.toURI().getPath()	
@@ -203,13 +206,16 @@ class FileWidget(BoxLayout):
 
 	#Adds and removes the video files to the nfc set so that they can be transferred
 	def toggle_nfc(self, state):
+		global nfcCallback
 		print 'toggling', self.ids.nfc_toggler
 		if(state == 'normal'):
 			print 'button state up'
-			nfc_video_set.remove(self.uri)
+			nfcCallback.removeUris(self.uri)
+#			nfc_video_set.remove(self.uri)
 		if(state == 'down'):
 			print 'button state down'
-			nfc_video_set.append(self.uri)
+			nfcCallback.addUris(self.uri)
+#			nfc_video_set.append(self.uri)
 
 	#Android's Bitmaps are in ARGB format, while kivy expects RGBA.
 	#This function swaps the bytes to their appropriate locations
@@ -309,7 +315,7 @@ class SearchScreen(Screen):
 		self.ids.fileList.clear_widgets()
 		self.ids.fileList.add_widget(wid)
 class CameraWidget(AnchorLayout):
-	camera_size = ListProperty([320, 240])
+	camera_size = ListProperty([800, 700])
 #	camera_size = ListProperty([480, 360])
 
 	def __init__(self, **kwargs):
@@ -390,9 +396,10 @@ class Skelly(App):
 
 		#Only activate the NFC functionality if the device supports it.
 		if self.adapter is not None:
-			self.callback = CreateNfcBeamUrisCallback()
-			self.callback.addContext(context)
-			self.adapter.setBeamPushUrisCallback(self.callback, context)
+			global nfcCallback
+			nfcCallback = CreateNfcBeamUrisCallback()
+			nfcCallback.addContext(context)
+			self.adapter.setBeamPushUrisCallback(nfcCallback, context)
 
 	def build(self):
 		#Android back mapping
@@ -400,9 +407,8 @@ class Skelly(App):
 		win = Window
 		win.bind(on_keyboard=self.key_handler)
 
+		self.nfc_init()
 		self.HomeScr.getStoredMedia()
-		#Initialize NFC
-		self.nfc_init()		
 
 		return self.sm
 
