@@ -10,6 +10,7 @@ from kivy.core.image import Image
 from kivy.graphics.texture import Texture
 from kivy.clock import Clock
 from kivy.properties import StringProperty, ObjectProperty
+from kivy.animation import Animation
 
 
 from kivy.uix.anchorlayout import AnchorLayout
@@ -163,7 +164,10 @@ class HomeScreen(Screen):
 	def openGearMenu(self):
 		gearMenu = GearMenu()
 		gearMenu.setScreen(self)
+		gearMenu.opacity = 0
+		anim = Animation(opacity = 1,duration=0.2)
 		self.ids.layer.add_widget(gearMenu)
+		anim.start(gearMenu)
 
 	def closeGearMenu(self):
 		self.ids.layer.remove_widget(GearMenu)
@@ -283,6 +287,15 @@ class FileWidget(BoxLayout):
 	def bench(self):
 		print "BENCHMARK: ", time.time() - self.benchmark
 		self.benchmark = time.time()
+	def delete(self):
+		anim = Animation(opacity=0, duration = 0.5)
+		anim.start(self)
+		Clock.schedule_once(self.remove,0.5)
+
+	def remove(self, *largs):
+		self.parent.remove_widget(self)
+		#os.remove(self.uri)
+		#os.remove(self.ids.img.source)
 
 class SearchScreen(Screen):
 	def on_txt_input(self):
