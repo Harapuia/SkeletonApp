@@ -82,8 +82,9 @@ class HomeScreen(Screen):
 			vibrator.vibrate(3000)
 		print self.discovered_media
 		print activity.getFilesDir().getAbsolutePath()
-		for root, dirnames, filenames in os.walk('./'):
-			print root,'/',filenames
+		#for root, dirnames, filenames in os.walk('./'):
+		#	print root,'/',filenames
+		print Window.size
 
 	#Function for starting the camera application
 	def startCamera(self):
@@ -295,14 +296,14 @@ class FileWidget(BoxLayout):
 		print "BENCHMARK: ", time.time() - self.benchmark
 		self.benchmark = time.time()
 	def delete(self):
-		anim = Animation(opacity=0, duration = 0.5)
+		anim = Animation(opacity=0, height=0, duration = 0.5)
 		anim.start(self)
 		Clock.schedule_once(self.remove,0.5)
 
 	def remove(self, *largs):
 		self.parent.remove_widget(self)
-		#os.remove(self.uri)
-		#os.remove(self.ids.img.source)
+		os.remove(self.uri)
+		os.remove(self.ids.img.source)
 
 class SearchScreen(Screen):
 	def on_txt_input(self):
@@ -320,12 +321,26 @@ class SearchScreen(Screen):
 class CameraWidget(AnchorLayout):
 	camera_size = ListProperty([800, 700])
 #	camera_size = ListProperty([480, 360])
+	passes = 0
 
 	def __init__(self, **kwargs):
 		super(CameraWidget, self).__init__(**kwargs)
-#		self._camera = AndroidCamera(size=self.camera_size, size_hint=(None, None))
-		self._camera = CamTestCamera(size=self.size, size_hint=(None, None))
-	        self.add_widget(self._camera)
+##		self._camera = AndroidCamera(size=self.camera_size, size_hint=(None, None))
+#		self._camera = CamTestCamera(size=self.camera_size, size_hint=(None, None))
+#	        self.add_widget(self._camera)
+		self.bind(size=self.update)
+	def update(self, *args):
+		print self.passes
+		print self.size
+		if self.passes == 2:
+			print 'Camera Size Changed to', self.size
+			width_ratio = (self.size[1] * (9./16.0) )  / self.size[0]
+			print width_ratio
+			self._camera = CamTestCamera(size=self.size, size_hint=(width_ratio, 1))
+		        self.add_widget(self._camera)
+			self.unbind(size=self.update)
+		else:
+			self.passes+=1
 
 	def start(self):
 		print 'Start camera'
@@ -346,7 +361,14 @@ class CamTestWidget(BoxLayout):
 		self.camera.pushButton()
 
 class CamScreen(Screen):
-	pass
+	def on_enter(self):
+		cam = self.ids.camera
+		if cam._camera != None:
+			cam.start()
+	def on_leave(self):
+		cam = self.ids.camera
+		if cam._camera != None:
+			cam.stop()
 class GearMenu(BoxLayout):
 	screen = ObjectProperty(None)
 	def setScreen(self, scr):
