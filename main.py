@@ -14,9 +14,10 @@ import os
 import io
 import threading
 
-from HomeScreen import HomeScreen
-from FileWidget import FileWidget
 from androidcamera import AndroidCamera
+from homescreen import HomeScreen
+from filewidget import FileWidget
+
 import globalvars
 
 from jnius import autoclass, cast, detach
@@ -65,12 +66,11 @@ class CameraWidget(AnchorLayout):
 
 	def __init__(self, **kwargs):
 		super(CameraWidget, self).__init__(**kwargs)
-##		self._camera = AndroidCamera(size=self.camera_size, size_hint=(None, None))
-#		self._camera = CamTestCamera(size=self.camera_size, size_hint=(None, None))
-#	        self.add_widget(self._camera)
 		self.bind(size=self.update)
-
-	#
+	#when the size updates, we place the camera widget appropriately
+	#currently only functions after the function has been called three times, as kivy
+	#does some weird stuff with updating the size variable, leading to divisions by zero
+	#needs to be looked into for a more solid fix
 	def update(self, *args):
 		print self.passes
 		print self.size
@@ -95,10 +95,12 @@ class CameraWidget(AnchorLayout):
 		self._camera.stop()
 
 class CamScreen(Screen):
+	#When the screen is entered, we start the camera
 	def on_enter(self):
 		cam = self.ids.camera
 		if cam._camera != None:
 			cam.start()
+	#Upon leaving, the camera is stopped
 	def on_leave(self):
 		cam = self.ids.camera
 		if cam._camera != None:
