@@ -1,16 +1,16 @@
 [app]
 
 # (str) Title of your application
-title = TSAP
+title = TriblerWrapper
 
 # (str) Package name
-package.name = tsap
+package.name = triblerwrapper
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.tribler.tsap
+package.domain = org.tribler.wrapper
 
 # (str) Source code where the main.py live
-source.dir = ./tsap/service
+source.dir = ./service
 #./tsap/service
 
 # (list) Source files to include (let empty to include all the files)
