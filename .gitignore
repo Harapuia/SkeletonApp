@@ -1,0 +1,14 @@
+# Buildozer
+tribler-wrapper/.buildozer/*
+tribler-wrapper/bin/*
+.buildozer/*
+bin/*
+
+# PyCharm
+.idea
+
+# Python
+*.pyo
+*.pyc
+
+*.*~
